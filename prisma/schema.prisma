@@ -69,6 +69,7 @@ enum TaskStatus {
   COMPLETED
   REJECTED
   NEEDS_REVIEW
+  APPROVED
 }
 
 enum ApprovalStatus {
@@ -248,6 +249,8 @@ model Document {
   case               Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
   clientId           String?
   client             Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  lawFirmId          String
+  lawFirm            LawFirm          @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
   title              String
   type               DocumentType
   content            String?          // OCR extracted text
@@ -270,6 +273,7 @@ model Document {
 
   @@index([caseId])
   @@index([clientId])
+  @@index([lawFirmId])
   @@index([type])
   @@index([sensitivityLevel])
   @@index([contentHash])
@@ -353,6 +357,7 @@ model TimeEntry {
   status        TaskStatus  @default(PENDING) // draft -> submitted -> approved
   source        String?     // "manual", "email", "calendar", "document", "phone"
   sourceRef     String?     // reference to source (email id, doc id, etc.)
+  metadata      Json        @default("{}")
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   approvedAt    DateTime?

@@ -19,7 +19,7 @@ async function routes(fastify: any) {
 
   // Privacy shield health
   fastify.get("/health/privacy", async () => {
-    return await (await import("./privacy/shield")).privacyShield.healthCheck();
+    return await (await import("./privacy/shield.js")).privacyShield.healthCheck();
   });
 
   // Main AI endpoint - route to departments
