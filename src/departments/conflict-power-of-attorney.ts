@@ -78,13 +78,12 @@ KURALLAR:
         // Check opposing parties in existing cases
         const opposingMatches = await prisma.party.findMany({
           where: {
-            case: { lawFirmId: context.lawFirmId },
             OR: [
               { taxId: { in: taxIds } },
               { name: { in: names } },
             ],
             isOpposing: true,
-            case: { NOT: { id: caseId } },
+            case: { lawFirmId: context.lawFirmId, NOT: { id: caseId } },
           },
           include: { case: { include: { client: true, lawyers: { include: { user: true } } } } },
         });
@@ -146,10 +145,10 @@ MÜVEKKİL: ${input.clientName}
 TCKN/VKN: ${input.clientTaxId}
 
 VEKİL AVUKATLAR:
-${input.lawyerNames.map((n, i) => `${i + 1}. ${n}`).join("\n")}
+${input.lawyerNames.map((n: string, i: number) => `${i + 1}. ${n}`).join("\n")}
 
 YETKİLER:
-${input.powers.map((p, i) => `${i + 1}. ${p}`).join("\n")}
+${input.powers.map((p: string, i: number) => `${i + 1}. ${p}`).join("\n")}
 
 Bu vekaletname, ${caseData?.caseNumber || ""} numaralı dosya kapsamında verilmiştir.
 Avukatlık Kanunu m.164 ve HMK m.104 hükümlerine uygun olarak düzenlenmiştir.

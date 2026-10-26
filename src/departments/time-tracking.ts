@@ -213,7 +213,7 @@ KURALLAR:
             description: entry.description,
             duration: entry.durationMinutes,
             source: entry.source,
-            confidence: entry.metadata?.confidence || 0,
+            confidence: (entry.metadata as { confidence?: number } | null)?.confidence || 0,
           });
           return acc;
         }, {} as Record<string, any>);

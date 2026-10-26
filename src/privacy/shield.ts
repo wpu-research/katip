@@ -135,7 +135,7 @@ export class PrivacyShield {
           score_threshold: 0.5,
           return_decision_process: false,
           // Add custom recognizers
-          ad_hoc_recognizers: this.customRecognizers.map((r) => ({
+          ad_hoc_recognizers: (this.customRecognizers ?? []).map((r) => ({
             entity_type: r.entityType,
             patterns: r.patterns,
             context_words: r.contextWords,

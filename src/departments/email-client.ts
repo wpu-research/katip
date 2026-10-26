@@ -4,6 +4,7 @@
  * Handles: Haiku classifies inbox, Sonnet drafts replies in office tone, weekly client summary
  */
 
+import { createHash } from "crypto";
 import { logger } from "@/config/logger";
 import { prisma } from "@/config/db";
 import {
@@ -118,6 +119,7 @@ ${caseContext.lawyerName || "Avukat"}`;
             title: `E-posta Taslağı: Re: ${email.subject}`,
             type: "CORRESPONDENCE",
             content: draft,
+            contentHash: createHash("sha256").update(draft).digest("hex"),
             sensitivityLevel: "L1_NORMAL",
             uploadedById: context.userId,
             metadata: { emailId: email.id, isDraft: true, tone },
@@ -186,10 +188,10 @@ ${petitions.map((p) => `- ${p.title} (${p.status})`).join("\n") || "- Yok"}
 **📧 E-posta Yazışmaları:** ${emails.length}
 
 **🎯 Haftaya Bakış:**
-- ${caseData?.deadlines?.[0] ? `Kritik süre: ${caseData.deadlines[0].title} (${caseData.deadlines[0].dueDate.toLocaleDateString("tr-TR")})` : "Önümüzdeki hafta kritik süre yok"}
-- ${caseData?.hearings?.[0] ? `Yaklaşan duruşma: ${caseData.hearings[0].courtName} (${caseData.hearings[0].hearingDate.toLocaleDateString("tr-TR")})` : "Yaklaşan duruşma yok"}
+- ${deadlines[0] ? `Kritik süre: ${deadlines[0].title} (${deadlines[0].dueDate.toLocaleDateString("tr-TR")})` : "Önümüzdeki hafta kritik süre yok"}
+- ${hearings[0] ? `Yaklaşan duruşma: ${hearings[0].courtName} (${hearings[0].hearingDate.toLocaleDateString("tr-TR")})` : "Yaklaşan duruşma yok"}
 
-**⚠️ Riskler/Notlar:** ${caseData?.metadata?.risks || "Özel risk belirtilmemiş"}`;
+**⚠️ Riskler/Notlar:** ${(caseData?.metadata as { risks?: string } | null)?.risks || "Özel risk belirtilmemiş"}`;
 
         return { summary, stats: { hearings: hearings.length, deadlines: deadlines.length, petitions: petitions.length, totalHours, billableHours } };
       },

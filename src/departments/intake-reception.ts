@@ -134,7 +134,7 @@ KURALLAR:
       },
       execute: async (input, context) => {
         const notifications = await Promise.all(
-          input.lawyerIds.map((lawyerId) =>
+          input.lawyerIds.map((lawyerId: string) =>
             prisma.notification.create({
               data: {
                 userId: lawyerId,

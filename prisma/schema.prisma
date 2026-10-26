@@ -99,21 +99,30 @@ enum BillingType {
 // ============================================
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  name          String
-  role          String    // "lawyer", "intern", "secretary", "admin"
-  department    String?
-  avatarUrl     String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  documents           Document[]
+  approvedTimeEntries TimeEntry[]     @relation("TimeApprover")
+  billingRates        BillingRate[]
+  researchMemos       ResearchMemo[]
+  reviewedPetitions   Petition[]
+  conflictChecks      ConflictCheck[]
+  requestedApprovals  Approval[]      @relation("Requester")
+  auditLogs           AuditLog[]
+  id                  String          @id @default(uuid())
+  email               String          @unique
+  name                String
+  role                String // "lawyer", "intern", "secretary", "admin"
+  department          String?
+  lawFirmId           String?
+  lawFirm             LawFirm?        @relation(fields: [lawFirmId], references: [id])
+  avatarUrl           String?
+  isActive            Boolean         @default(true)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   cases         CaseLawyer[]
   timeEntries   TimeEntry[]
-  approvals     Approval[]         @relation("Approver")
-  assignedTasks Task[]             @relation("Assignee")
-  createdCases  Case[]             @relation("Creator")
+  approvals     Approval[]     @relation("Approver")
+  createdCases  Case[]         @relation("Creator")
   notifications Notification[]
 
   @@index([email])
@@ -121,45 +130,48 @@ model User {
 }
 
 model LawFirm {
-  id                  String   @id @default(uuid())
-  name                String
-  taxNumber           String   @unique
-  address             String
-  phone               String
-  email               String
-  barAssociation      String
-  settings            Json     @default("{}") // firm-specific settings
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  invoices       Invoice[]
+  dailyBriefings DailyBriefing[]
+  id             String          @id @default(uuid())
+  name           String
+  taxNumber      String          @unique
+  address        String
+  phone          String
+  email          String
+  barAssociation String
+  settings       Json            @default("{}") // firm-specific settings
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  cases               Case[]
-  lawyers             User[]
-  clients             Client[]
-  templates           Template[]
-  billingRates        BillingRate[]
-  trustAccounts       TrustAccount[]
+  cases         Case[]
+  lawyers       User[]
+  clients       Client[]
+  templates     Template[]
+  billingRates  BillingRate[]
+  trustAccounts TrustAccount[]
+  Document      Document[]
 }
 
 model Client {
-  id              String   @id @default(uuid())
-  lawFirmId       String
-  lawFirm         LawFirm  @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  name            String
-  type            String   // "individual", "corporate"
-  taxId           String?  @unique // TCKN or VKN
-  email           String?
-  phone           String?
-  address         String?
+  id               String           @id @default(uuid())
+  lawFirmId        String
+  lawFirm          LawFirm          @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  name             String
+  type             String // "individual", "corporate"
+  taxId            String?          @unique // TCKN or VKN
+  email            String?
+  phone            String?
+  address          String?
   sensitivityLevel SensitivityLevel @default(L1_NORMAL)
-  metadata        Json     @default("{}")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  metadata         Json             @default("{}")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  cases           Case[]
-  parties         Party[]
-  documents       Document[]
-  invoices        Invoice[]
-  trustAccount    TrustAccount?
+  cases         Case[]
+  parties       Party[]
+  documents     Document[]
+  invoices      Invoice[]
+  trustAccounts TrustAccount[]
 
   @@index([lawFirmId])
   @@index([taxId])
@@ -167,34 +179,36 @@ model Client {
 }
 
 model Case {
-  id              String      @id @default(uuid())
-  lawFirmId       String
-  lawFirm         LawFirm     @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  clientId        String
-  client          Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  creatorId       String
-  creator         User        @relation("Creator", fields: [creatorId], references: [id])
-  caseNumber      String
-  courtName       String?
-  caseType        CaseType
-  status          CaseStatus  @default(OPEN)
-  description     String?
+  conflictChecks   ConflictCheck[]
+  aiInteractions   AIInteraction[]
+  id               String           @id @default(uuid())
+  lawFirmId        String
+  lawFirm          LawFirm          @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  clientId         String
+  client           Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  creatorId        String
+  creator          User             @relation("Creator", fields: [creatorId], references: [id])
+  caseNumber       String
+  courtName        String?
+  caseType         CaseType
+  status           CaseStatus       @default(OPEN)
+  description      String?
   sensitivityLevel SensitivityLevel @default(L1_NORMAL)
-  metadata        Json        @default("{}")
-  openedAt        DateTime    @default(now())
-  closedAt        DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  metadata         Json             @default("{}")
+  openedAt         DateTime         @default(now())
+  closedAt         DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  lawyers         CaseLawyer[]
-  parties         Party[]
-  documents       Document[]
-  hearings        Hearing[]
-  deadlines       Deadline[]
-  timeEntries     TimeEntry[]
-  invoices        Invoice[]
-  researchMemos   ResearchMemo[]
-  petitions       Petition[]
+  lawyers       CaseLawyer[]
+  parties       Party[]
+  documents     Document[]
+  hearings      Hearing[]
+  deadlines     Deadline[]
+  timeEntries   TimeEntry[]
+  invoices      Invoice[]
+  researchMemos ResearchMemo[]
+  petitions     Petition[]
 
   @@unique([lawFirmId, caseNumber])
   @@index([lawFirmId])
@@ -204,12 +218,12 @@ model Case {
 }
 
 model CaseLawyer {
-  id        String @id @default(uuid())
-  caseId    String
-  case      Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      String // "lead", "assisting", "supervising"
+  id         String   @id @default(uuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String // "lead", "assisting", "supervising"
   assignedAt DateTime @default(now())
 
   @@unique([caseId, userId])
@@ -218,21 +232,21 @@ model CaseLawyer {
 }
 
 model Party {
-  id          String      @id @default(uuid())
-  caseId      String
-  case        Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  clientId    String?
-  client      Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  name        String
-  role        PartyRole
-  taxId       String?     // TCKN/VKN for conflict check
-  email       String?
-  phone       String?
-  address     String?
-  isOpposing  Boolean     @default(false)
-  metadata    Json        @default("{}")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id         String    @id @default(uuid())
+  caseId     String
+  case       Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  clientId   String?
+  client     Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  name       String
+  role       PartyRole
+  taxId      String? // TCKN/VKN for conflict check
+  email      String?
+  phone      String?
+  address    String?
+  isOpposing Boolean   @default(false)
+  metadata   Json      @default("{}")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([caseId])
   @@index([taxId])
@@ -244,32 +258,32 @@ model Party {
 // ============================================
 
 model Document {
-  id                 String           @id @default(uuid())
-  caseId             String
-  case               Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  clientId           String?
-  client             Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  lawFirmId          String
-  lawFirm            LawFirm          @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  title              String
-  type               DocumentType
-  content            String?          // OCR extracted text
-  contentHash        String           @unique // SHA256 for deduplication
-  filePath           String?          // Nextcloud path
-  fileSize           Int?
-  mimeType           String?
-  sensitivityLevel   SensitivityLevel @default(L1_NORMAL)
-  pseudonymMap       Json?            // L2: mapping of pseudonyms to real values
-  embedding          Unsupported("vector(1024)")? // bge-m3 embedding
-  pgTrgmVector       Unsupported("tsvector")?     // for full-text search
-  metadata           Json             @default("{}")
-  uploadedById       String
-  uploadedBy         User             @relation(fields: [uploadedById], references: [id])
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  id               String                       @id @default(uuid())
+  caseId           String
+  case             Case                         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  clientId         String?
+  client           Client?                      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  lawFirmId        String
+  lawFirm          LawFirm                      @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  title            String
+  type             DocumentType
+  content          String? // OCR extracted text
+  contentHash      String                       @unique // SHA256 for deduplication
+  filePath         String? // Nextcloud path
+  fileSize         Int?
+  mimeType         String?
+  sensitivityLevel SensitivityLevel             @default(L1_NORMAL)
+  pseudonymMap     Json? // L2: mapping of pseudonyms to real values
+  embedding        Unsupported("vector(1024)")? // bge-m3 embedding
+  pgTrgmVector     Unsupported("tsvector")? // for full-text search
+  metadata         Json                         @default("{}")
+  uploadedById     String
+  uploadedBy       User                         @relation(fields: [uploadedById], references: [id])
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
 
-  petitionRefs       PetitionDocument[]
-  researchRefs       ResearchDocument[]
+  petitionRefs PetitionDocument[]
+  researchRefs ResearchDocument[]
 
   @@index([caseId])
   @@index([clientId])
@@ -280,16 +294,17 @@ model Document {
 }
 
 model Template {
-  id            String   @id @default(uuid())
-  lawFirmId     String
-  lawFirm       LawFirm  @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  name          String
-  type          DocumentType
-  content       String   // docxtpl template
-  description   String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  petitions   Petition[]
+  id          String       @id @default(uuid())
+  lawFirmId   String
+  lawFirm     LawFirm      @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  name        String
+  type        DocumentType
+  content     String // docxtpl template
+  description String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@index([lawFirmId])
   @@index([type])
@@ -300,37 +315,37 @@ model Template {
 // ============================================
 
 model Hearing {
-  id            String   @id @default(uuid())
-  caseId        String
-  case          Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  courtName     String
-  hearingDate   DateTime
-  hearingType   String   // "first", "interim", "final", "expert"
-  notes         String?
-  isVirtual     Boolean  @default(false)
-  meetingLink   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(uuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  courtName   String
+  hearingDate DateTime
+  hearingType String // "first", "interim", "final", "expert"
+  notes       String?
+  isVirtual   Boolean  @default(false)
+  meetingLink String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([caseId])
   @@index([hearingDate])
 }
 
 model Deadline {
-  id              String   @id @default(uuid())
-  caseId          String
-  case            Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  title           String
-  description     String?
-  dueDate         DateTime
-  calculatedDate  DateTime // HMK hesaplamalı tarih
-  basis           String   // "HMK m.104", "resmi tatil", etc.
-  isCritical      Boolean  @default(false)
-  status          TaskStatus @default(PENDING)
-  completedAt     DateTime?
-  reminderSent    Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String     @id @default(uuid())
+  caseId         String
+  case           Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  dueDate        DateTime
+  calculatedDate DateTime // HMK hesaplamalı tarih
+  basis          String // "HMK m.104", "resmi tatil", etc.
+  isCritical     Boolean    @default(false)
+  status         TaskStatus @default(PENDING)
+  completedAt    DateTime?
+  reminderSent   Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   @@index([caseId])
   @@index([dueDate])
@@ -343,26 +358,26 @@ model Deadline {
 // ============================================
 
 model TimeEntry {
-  id            String      @id @default(uuid())
-  caseId        String
-  case          Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date          DateTime
+  id              String     @id @default(uuid())
+  caseId          String
+  case            Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime
   durationMinutes Int
-  description   String
-  activityType  String      // "meeting", "drafting", "research", "court", "phone", "email"
-  isBillable    Boolean     @default(true)
-  hourlyRate    Decimal?    @db.Decimal(10, 2)
-  status        TaskStatus  @default(PENDING) // draft -> submitted -> approved
-  source        String?     // "manual", "email", "calendar", "document", "phone"
-  sourceRef     String?     // reference to source (email id, doc id, etc.)
-  metadata      Json        @default("{}")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  approvedAt    DateTime?
-  approvedById  String?
-  approvedBy    User?       @relation("Approver", fields: [approvedById], references: [id])
+  description     String
+  activityType    String // "meeting", "drafting", "research", "court", "phone", "email"
+  isBillable      Boolean    @default(true)
+  hourlyRate      Decimal?   @db.Decimal(10, 2)
+  status          TaskStatus @default(PENDING) // draft -> submitted -> approved
+  source          String? // "manual", "email", "calendar", "document", "phone"
+  sourceRef       String? // reference to source (email id, doc id, etc.)
+  metadata        Json       @default("{}")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  approvedAt      DateTime?
+  approvedById    String?
+  approvedBy      User?      @relation("TimeApprover", fields: [approvedById], references: [id])
 
   @@index([caseId])
   @@index([userId])
@@ -371,49 +386,49 @@ model TimeEntry {
 }
 
 model BillingRate {
-  id          String   @id @default(uuid())
-  lawFirmId   String
-  lawFirm     LawFirm  @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  caseType    CaseType?
-  role        String?  // "partner", "senior", "junior", "intern"
-  hourlyRate  Decimal  @db.Decimal(10, 2)
-  currency    String   @default("TRY")
+  id            String    @id @default(uuid())
+  lawFirmId     String
+  lawFirm       LawFirm   @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  caseType      CaseType?
+  role          String? // "partner", "senior", "junior", "intern"
+  hourlyRate    Decimal   @db.Decimal(10, 2)
+  currency      String    @default("TRY")
   effectiveFrom DateTime
   effectiveTo   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([lawFirmId])
   @@index([userId])
 }
 
 model Invoice {
-  id              String      @id @default(uuid())
-  lawFirmId       String
-  lawFirm         LawFirm     @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  caseId          String?
-  case            Case?       @relation(fields: [caseId], references: [id], onDelete: SetNull)
-  clientId        String
-  client          Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  invoiceNumber   String
-  type            BillingType
-  status          String      @default("draft") // draft, sent, paid, overdue, cancelled
-  subtotal        Decimal     @db.Decimal(12, 2)
-  taxAmount       Decimal     @db.Decimal(12, 2)
-  totalAmount     Decimal     @db.Decimal(12, 2)
-  currency        String      @default("TRY")
-  issueDate       DateTime
-  dueDate         DateTime
-  paidDate        DateTime?
-  eInvoiceId      String?     // e-SMM / GIB entegrasyon ID
-  metadata        Json        @default("{}")
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id            String      @id @default(uuid())
+  lawFirmId     String
+  lawFirm       LawFirm     @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  caseId        String?
+  case          Case?       @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  clientId      String
+  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  invoiceNumber String
+  type          BillingType
+  status        String      @default("draft") // draft, sent, paid, overdue, cancelled
+  subtotal      Decimal     @db.Decimal(12, 2)
+  taxAmount     Decimal     @db.Decimal(12, 2)
+  totalAmount   Decimal     @db.Decimal(12, 2)
+  currency      String      @default("TRY")
+  issueDate     DateTime
+  dueDate       DateTime
+  paidDate      DateTime?
+  eInvoiceId    String? // e-SMM / GIB entegrasyon ID
+  metadata      Json        @default("{}")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  items           InvoiceItem[]
-  trustTransfers  TrustTransfer[]
+  items          InvoiceItem[]
+  trustTransfers TrustTransfer[]
 
   @@unique([lawFirmId, invoiceNumber])
   @@index([lawFirmId])
@@ -424,34 +439,34 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   invoiceId   String
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   description String
-  quantity    Decimal  @db.Decimal(10, 2)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  totalPrice  Decimal  @db.Decimal(12, 2)
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  totalPrice  Decimal @db.Decimal(12, 2)
   timeEntryId String?
-  sortOrder   Int      @default(0)
+  sortOrder   Int     @default(0)
 
   @@index([invoiceId])
 }
 
 model TrustAccount {
-  id          String   @id @default(uuid())
-  lawFirmId   String
-  lawFirm     LawFirm  @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  clientId    String
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  balance     Decimal  @default(0) @db.Decimal(12, 2)
-  currency    String   @default("TRY")
-  iban        String?
-  bankName    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  lawFirmId String
+  lawFirm   LawFirm  @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  balance   Decimal  @default(0) @db.Decimal(12, 2)
+  currency  String   @default("TRY")
+  iban      String?
+  bankName  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  transfers   TrustTransfer[]
+  transfers TrustTransfer[]
 
   @@unique([lawFirmId, clientId])
   @@index([lawFirmId])
@@ -459,16 +474,16 @@ model TrustAccount {
 }
 
 model TrustTransfer {
-  id            String       @id @default(uuid())
+  id             String       @id @default(uuid())
   trustAccountId String
-  trustAccount  TrustAccount @relation(fields: [trustAccountId], references: [id], onDelete: Cascade)
-  invoiceId     String?
-  invoice       Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  amount        Decimal      @db.Decimal(12, 2)
-  type          String       // "deposit", "withdrawal", "fee_payment", "expense"
-  description   String
-  reference     String?
-  createdAt     DateTime     @default(now())
+  trustAccount   TrustAccount @relation(fields: [trustAccountId], references: [id], onDelete: Cascade)
+  invoiceId      String?
+  invoice        Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  amount         Decimal      @db.Decimal(12, 2)
+  type           String // "deposit", "withdrawal", "fee_payment", "expense"
+  description    String
+  reference      String?
+  createdAt      DateTime     @default(now())
 
   @@index([trustAccountId])
   @@index([invoiceId])
@@ -479,34 +494,34 @@ model TrustTransfer {
 // ============================================
 
 model ResearchMemo {
-  id            String   @id @default(uuid())
-  caseId        String
-  case          Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  title         String
-  question      String
-  answer        String
-  citations     Json     @default("[]") // array of {court, decisionNumber, date, url, excerpt}
-  modelUsed     String   // "opus-5.5", "sonnet-5.5"
-  confidence    Float    @default(0)
-  createdById   String
-  createdBy     User     @relation(fields: [createdById], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(uuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  title       String
+  question    String
+  answer      String
+  citations   Json     @default("[]") // array of {court, decisionNumber, date, url, excerpt}
+  modelUsed   String // "opus-5.5", "sonnet-5.5"
+  confidence  Float    @default(0)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  documents     ResearchDocument[]
+  documents ResearchDocument[]
 
   @@index([caseId])
   @@index([createdById])
 }
 
 model ResearchDocument {
-  id               String @id @default(uuid())
-  researchMemoId   String
-  researchMemo     ResearchMemo @relation(fields: [researchMemoId], references: [id], onDelete: Cascade)
-  documentId       String
-  document         Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  relevanceScore   Float
-  excerpt          String?
+  id             String       @id @default(uuid())
+  researchMemoId String
+  researchMemo   ResearchMemo @relation(fields: [researchMemoId], references: [id], onDelete: Cascade)
+  documentId     String
+  document       Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  relevanceScore Float
+  excerpt        String?
 
   @@unique([researchMemoId, documentId])
   @@index([researchMemoId])
@@ -514,26 +529,26 @@ model ResearchDocument {
 }
 
 model Petition {
-  id              String         @id @default(uuid())
-  caseId          String
-  case            Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  templateId      String?
-  template        Template?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  title           String
-  content         String         // generated docx content (base64 or path)
-  status          ApprovalStatus @default(PENDING)
-  modelUsed       String         // "opus-5.5-high"
-  generatedAt     DateTime       @default(now())
-  reviewedAt      DateTime?
-  reviewedById    String?
-  reviewedBy      User?          @relation(fields: [reviewedById], references: [id])
-  filedAt         DateTime?
-  uyapReceiptNo   String?
-  metadata        Json           @default("{}")
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id            String         @id @default(uuid())
+  caseId        String
+  case          Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  templateId    String?
+  template      Template?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  title         String
+  content       String // generated docx content (base64 or path)
+  status        ApprovalStatus @default(PENDING)
+  modelUsed     String // "opus-5.5-high"
+  generatedAt   DateTime       @default(now())
+  reviewedAt    DateTime?
+  reviewedById  String?
+  reviewedBy    User?          @relation(fields: [reviewedById], references: [id])
+  filedAt       DateTime?
+  uyapReceiptNo String?
+  metadata      Json           @default("{}")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  documents       PetitionDocument[]
+  documents PetitionDocument[]
 
   @@index([caseId])
   @@index([status])
@@ -541,12 +556,12 @@ model Petition {
 }
 
 model PetitionDocument {
-  id          String   @id @default(uuid())
-  petitionId  String
-  petition    Petition @relation(fields: [petitionId], references: [id], onDelete: Cascade)
-  documentId  String
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  role        String   // "evidence", "reference", "attachment"
+  id         String   @id @default(uuid())
+  petitionId String
+  petition   Petition @relation(fields: [petitionId], references: [id], onDelete: Cascade)
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  role       String // "evidence", "reference", "attachment"
 
   @@unique([petitionId, documentId])
   @@index([petitionId])
@@ -558,17 +573,17 @@ model PetitionDocument {
 // ============================================
 
 model ConflictCheck {
-  id              String               @id @default(uuid())
-  caseId          String?
-  case            Case?                @relation(fields: [caseId], references: [id], onDelete: SetNull)
-  checkedTaxIds   String[]             // TCKN/VKN listesi
-  checkedNames    String[]             // isim listesi
-  status          ConflictCheckStatus
-  matches         Json                 @default("[]") // {partyId, matchType, confidence}
-  checkedAt       DateTime             @default(now())
-  checkedById     String
-  checkedBy       User                 @relation(fields: [checkedById], references: [id])
-  notes           String?
+  id            String              @id @default(uuid())
+  caseId        String?
+  case          Case?               @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  checkedTaxIds String[] // TCKN/VKN listesi
+  checkedNames  String[] // isim listesi
+  status        ConflictCheckStatus
+  matches       Json                @default("[]") // {partyId, matchType, confidence}
+  checkedAt     DateTime            @default(now())
+  checkedById   String
+  checkedBy     User                @relation(fields: [checkedById], references: [id])
+  notes         String?
 
   @@index([caseId])
   @@index([status])
@@ -580,21 +595,21 @@ model ConflictCheck {
 // ============================================
 
 model Approval {
-  id              String         @id @default(uuid())
-  type            String         // "petition", "invoice", "time_entry", "email", "contract"
-  resourceId      String         // ID of the resource being approved
-  resourceType    String         // "Petition", "Invoice", "TimeEntry", "EmailDraft"
-  title           String
-  description     String?
-  status          ApprovalStatus @default(PENDING)
-  requestedById   String
-  requestedBy     User           @relation(fields: [requestedById], references: [id])
-  approverId      String?
-  approver        User?          @relation("Approver", fields: [approverId], references: [id])
-  requestedAt     DateTime       @default(now())
-  respondedAt     DateTime?
-  comments        String?
-  metadata        Json           @default("{}")
+  id            String         @id @default(uuid())
+  type          String // "petition", "invoice", "time_entry", "email", "contract"
+  resourceId    String // ID of the resource being approved
+  resourceType  String // "Petition", "Invoice", "TimeEntry", "EmailDraft"
+  title         String
+  description   String?
+  status        ApprovalStatus @default(PENDING)
+  requestedById String
+  requestedBy   User           @relation("Requester", fields: [requestedById], references: [id])
+  approverId    String?
+  approver      User?          @relation("Approver", fields: [approverId], references: [id])
+  requestedAt   DateTime       @default(now())
+  respondedAt   DateTime?
+  comments      String?
+  metadata      Json           @default("{}")
 
   @@index([resourceId, resourceType])
   @@index([status])
@@ -607,17 +622,17 @@ model Approval {
 // ============================================
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // "hearing_reminder", "deadline_alert", "approval_request", "daily_briefing"
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // "hearing_reminder", "deadline_alert", "approval_request", "daily_briefing"
   title     String
   message   String
-  priority  String   @default("normal") // low, normal, high, critical
-  isRead    Boolean  @default(false)
+  priority  String    @default("normal") // low, normal, high, critical
+  isRead    Boolean   @default(false)
   readAt    DateTime?
-  metadata  Json     @default("{}")
-  createdAt DateTime @default(now())
+  metadata  Json      @default("{}")
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([isRead])
@@ -625,18 +640,18 @@ model Notification {
 }
 
 model AuditLog {
-  id          String   @id @default(uuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action      String   // "create", "read", "update", "delete", "export", "ai_call"
-  resourceType String  // "Case", "Document", "Petition", etc.
-  resourceId  String?
-  details     Json     @default("{}")
-  ipAddress   String?
-  userAgent   String?
-  hash        String   // hash chain for immutability
-  prevHash    String?
-  createdAt   DateTime @default(now())
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       String // "create", "read", "update", "delete", "export", "ai_call"
+  resourceType String // "Case", "Document", "Petition", etc.
+  resourceId   String?
+  details      Json     @default("{}")
+  ipAddress    String?
+  userAgent    String?
+  hash         String // hash chain for immutability
+  prevHash     String?
+  createdAt    DateTime @default(now())
 
   @@index([userId])
   @@index([resourceType, resourceId])
@@ -649,20 +664,20 @@ model AuditLog {
 // ============================================
 
 model AIInteraction {
-  id              String   @id @default(uuid())
-  caseId          String?
-  case            Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
-  department      String   // "intake", "conflict", "deadlines", "research", "petition", "email", "time", "billing"
-  model           String   // "haiku-5.5", "sonnet-5.5", "opus-5.5"
-  effort          String   // "low", "medium", "high"
-  promptTokens    Int
+  id               String   @id @default(uuid())
+  caseId           String?
+  case             Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  department       String // "intake", "conflict", "deadlines", "research", "petition", "email", "time", "billing"
+  model            String // "haiku-5.5", "sonnet-5.5", "opus-5.5"
+  effort           String // "low", "medium", "high"
+  promptTokens     Int
   completionTokens Int
-  totalTokens     Int
-  estimatedCost   Decimal  @db.Decimal(10, 6)
-  promptHash      String   // hash of prompt for deduplication
-  responseHash    String
-  metadata        Json     @default("{}")
-  createdAt       DateTime @default(now())
+  totalTokens      Int
+  estimatedCost    Decimal  @db.Decimal(10, 6)
+  promptHash       String // hash of prompt for deduplication
+  responseHash     String
+  metadata         Json     @default("{}")
+  createdAt        DateTime @default(now())
 
   @@index([caseId])
   @@index([department])
@@ -675,12 +690,12 @@ model AIInteraction {
 // ============================================
 
 model DailyBriefing {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   lawFirmId   String
-  lawFirm     LawFirm  @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
-  date        DateTime @db.Date
-  content     Json     @default("{}") // structured briefing data
-  generatedAt DateTime @default(now())
+  lawFirm     LawFirm   @relation(fields: [lawFirmId], references: [id], onDelete: Cascade)
+  date        DateTime  @db.Date
+  content     Json      @default("{}") // structured briefing data
+  generatedAt DateTime  @default(now())
   sentAt      DateTime?
   recipients  String[] // user IDs
 
