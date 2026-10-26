@@ -52,6 +52,7 @@ KURALLAR:
           where: { id: input.caseId },
           include: {
             client: true,
+            lawyers: true,
             timeEntries: {
               where: {
                 status: "APPROVED",
@@ -282,7 +283,7 @@ KURALLAR:
       },
       execute: async (input, context) => {
         const approvals = await Promise.all(
-          input.managerIds.map(managerId =>
+          input.managerIds.map((managerId: string) =>
             prisma.approval.create({
               data: {
                 type: "invoice",

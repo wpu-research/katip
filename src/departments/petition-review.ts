@@ -221,7 +221,7 @@ ${cs?.lawyers?.[0]?.user?.barNumber || "......."} No'lu Avukat
       },
       execute: async (input, context) => {
         const approvals = await Promise.all(
-          input.lawyerIds.map((lawyerId) =>
+          input.lawyerIds.map((lawyerId: string) =>
             prisma.approval.create({
               data: {
                 type: "petition",

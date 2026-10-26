@@ -3,7 +3,7 @@
  * Fastify server with all department agents
  */
 
-import Fastify from "fastify";
+import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
@@ -12,8 +12,11 @@ import { logger } from "./config/logger";
 import { katipCore } from "./core/katip-core";
 import { prisma } from "./config/db";
 
+const header = (v: string | string[] | undefined, fallback: string): string =>
+  (Array.isArray(v) ? v[0] : v) || fallback;
+
 // Route handlers
-async function routes(fastify: any) {
+async function routes(fastify: FastifyInstance) {
   // Health check
   fastify.get("/health", async () => ({ status: "ok", service: "katip", version: "0.1.0" }));
 
@@ -33,8 +36,8 @@ async function routes(fastify: any) {
     }
 
     // Get user from auth (mock for now)
-    const userId = request.headers["x-user-id"] || "demo-user";
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
+    const userId = header(request.headers["x-user-id"], "demo-user");
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
 
     const context = {
       caseId,
@@ -83,8 +86,8 @@ async function routes(fastify: any) {
     Body: { clientName: string; clientType: string; taxId: string; caseType: string; summary: string; opposingParties?: string[] };
   }>("/api/cases", async (request, reply) => {
     const { clientName, clientType, taxId, caseType, summary, opposingParties } = request.body;
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
-    const userId = request.headers["x-user-id"] || "demo-user";
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
+    const userId = header(request.headers["x-user-id"], "demo-user");
 
     const client = await prisma.client.create({
       data: { lawFirmId, name: clientName, type: clientType, taxId, sensitivityLevel: "L1_NORMAL" },
@@ -110,7 +113,7 @@ async function routes(fastify: any) {
 
   fastify.get<{ Params: { id: string } }>("/api/cases/:id", async (request, reply) => {
     const { id } = request.params;
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
 
     const caseData = await prisma.case.findFirst({
       where: { id, lawFirmId },
@@ -137,7 +140,7 @@ async function routes(fastify: any) {
   // Approvals
   fastify.get<{ Querystring: { status?: string } }>("/api/approvals", async (request, reply) => {
     const { status } = request.query;
-    const userId = request.headers["x-user-id"] || "demo-user";
+    const userId = header(request.headers["x-user-id"], "demo-user");
 
     const approvals = await prisma.approval.findMany({
       where: { approverId: userId, status: status as any || "PENDING" },
@@ -152,11 +155,11 @@ async function routes(fastify: any) {
     async (request, reply) => {
       const { id } = request.params;
       const { action, comments } = request.body;
-      const userId = request.headers["x-user-id"] || "demo-user";
+      const userId = header(request.headers["x-user-id"], "demo-user");
 
       const approval = await prisma.approval.update({
         where: { id },
-        data: { status: action, respondedAt: new Date(), approverId: userId, comments },
+        data: { status: ({ APPROVE: "APPROVED", REJECT: "REJECTED", CHANGES_REQUESTED: "CHANGES_REQUESTED" } as const)[action], respondedAt: new Date(), approverId: userId, comments },
       });
       return approval;
     }
@@ -165,7 +168,7 @@ async function routes(fastify: any) {
   // Time entries - daily approval screen
   fastify.get<{ Querystring: { date?: string } }>("/api/time-entries/daily", async (request, reply) => {
     const { date } = request.query;
-    const userId = request.headers["x-user-id"] || "demo-user";
+    const userId = header(request.headers["x-user-id"], "demo-user");
     const targetDate = date ? new Date(date) : new Date();
 
     const startOfDay = new Date(targetDate);
@@ -186,7 +189,7 @@ async function routes(fastify: any) {
     "/api/time-entries/bulk",
     async (request, reply) => {
       const { entryIds, action, modifications } = request.body;
-      const userId = request.headers["x-user-id"] || "demo-user";
+      const userId = header(request.headers["x-user-id"], "demo-user");
 
       if (action === "approve") {
         await prisma.timeEntry.updateMany({
@@ -214,7 +217,7 @@ async function routes(fastify: any) {
   // Documents
   fastify.get<{ Querystring: { caseId?: string; type?: string } }>("/api/documents", async (request, reply) => {
     const { caseId, type } = request.query;
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
 
     const documents = await prisma.document.findMany({
       where: { lawFirmId, caseId: caseId as string, type: type as any },
@@ -227,7 +230,7 @@ async function routes(fastify: any) {
   // Invoices
   fastify.get<{ Querystring: { caseId?: string; status?: string } }>("/api/invoices", async (request, reply) => {
     const { caseId, status } = request.query;
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
 
     const invoices = await prisma.invoice.findMany({
       where: { lawFirmId, caseId: caseId as string, status: status as any },
@@ -242,8 +245,8 @@ async function routes(fastify: any) {
     Body: { caseId: string; taxIds: string[]; names: string[] };
   }>("/api/conflict-check", async (request, reply) => {
     const { caseId, taxIds, names } = request.body;
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
-    const userId = request.headers["x-user-id"] || "demo-user";
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
+    const userId = header(request.headers["x-user-id"], "demo-user");
 
     const dept = katipCore.getDepartment("CONFLICT_POWER_OF_ATTORNEY");
     if (!dept) return reply.code(500).send({ error: "Departman bulunamadı" });
@@ -256,7 +259,7 @@ async function routes(fastify: any) {
   // Research memos
   fastify.get<{ Querystring: { caseId?: string } }>("/api/research", async (request, reply) => {
     const { caseId } = request.query;
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
 
     const memos = await prisma.researchMemo.findMany({
       where: { caseId: caseId as string, case: { lawFirmId } },
@@ -269,7 +272,7 @@ async function routes(fastify: any) {
   // Petitions
   fastify.get<{ Querystring: { caseId?: string; status?: string } }>("/api/petitions", async (request, reply) => {
     const { caseId, status } = request.query;
-    const lawFirmId = request.headers["x-law-firm-id"] || "demo-firm";
+    const lawFirmId = header(request.headers["x-law-firm-id"], "demo-firm");
 
     const petitions = await prisma.petition.findMany({
       where: { caseId: caseId as string, case: { lawFirmId }, status: status as any },
@@ -282,7 +285,7 @@ async function routes(fastify: any) {
   // Notifications
   fastify.get<{ Querystring: { unreadOnly?: string } }>("/api/notifications", async (request, reply) => {
     const { unreadOnly } = request.query;
-    const userId = request.headers["x-user-id"] || "demo-user";
+    const userId = header(request.headers["x-user-id"], "demo-user");
 
     const notifications = await prisma.notification.findMany({
       where: { userId, isRead: unreadOnly === "true" ? false : undefined },

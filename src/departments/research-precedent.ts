@@ -60,6 +60,7 @@ export class ResearchPrecedentAgent implements DepartmentAgent {
           },
           take: input.limit,
           orderBy: { createdAt: "desc" },
+          include: { case: true },
         });
 
         return {
@@ -163,7 +164,7 @@ export class ResearchPrecedentAgent implements DepartmentAgent {
         // Link documents
         if (input.documentIds.length > 0) {
           await Promise.all(
-            input.documentIds.map((docId) =>
+            input.documentIds.map((docId: string) =>
               prisma.researchDocument.create({
                 data: {
                   researchMemoId: memo.id,

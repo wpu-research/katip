@@ -26,9 +26,9 @@ export const prismaWithExtensions = prisma.$extends({
   name: "katip-extensions",
   query: {
     $allModels: {
-      async $allOperations({ args, query }) {
+      async $allOperations({ operation, args, query }) {
         // Add audit logging for mutations
-        const isMutation = ["create", "update", "delete", "upsert"].includes(args.action);
+        const isMutation = ["create", "update", "delete", "upsert"].some((op) => operation.startsWith(op));
 
         const result = await query(args);
 

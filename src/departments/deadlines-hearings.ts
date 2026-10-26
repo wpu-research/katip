@@ -165,7 +165,7 @@ KURALLAR:
             dueDate: new Date(input.endDate),
             calculatedDate: new Date(input.endDate),
             basis: "HMK",
-            isCritical: input.reminderDays?.some((d) => d <= 3) || false,
+            isCritical: input.reminderDays?.some((d: number) => d <= 3) || false,
             reminderSent: false,
           },
         });
@@ -212,7 +212,7 @@ KURALLAR:
       },
       execute: async (input, context) => {
         const approvals = await Promise.all(
-          input.approverIds.map((approverId) =>
+          input.approverIds.map((approverId: string) =>
             prisma.approval.create({
               data: {
                 type: "deadline_confirmation",
